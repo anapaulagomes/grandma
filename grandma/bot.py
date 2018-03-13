@@ -8,7 +8,12 @@ import sqlite3
 from datetime import datetime
 
 
-def create_db(db_name='grandma-test.db'):
+DEFAULT_CHANNEL = 'general'
+READ_DELAY = 1
+DB_NAME = 'grandma.db'  # env variable
+
+
+def create_db(db_name='grandma.db'):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS coffees
@@ -18,14 +23,24 @@ def create_db(db_name='grandma-test.db'):
     conn.close()
 
 
-def update_coffee(has_coffee):
+def update_coffee(has_coffee, db_name='grandma.db'):
     timestamp = datetime.now()
-    conn = sqlite3.connect('grandma-test.db')
+    conn = sqlite3.connect(db_name)
     c = conn.cursor()
     c.execute('''INSERT INTO coffees(timestamp, has_coffee)
                 VALUES (?, ?)''', (timestamp, has_coffee))
     conn.commit()
     conn.close()
+
+
+def has_coffee(db_name='grandma.db'):
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute('''SELECT * FROM coffees ORDER BY id DESC LIMIT 1''')
+    _, _, status = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return bool(status)
 
 
 class BotNotConnected(BaseException):
@@ -40,6 +55,9 @@ class Grandma:
         'coffee is done',
         'coffee is ready',
         'coffee is served',
+    ]
+    COFFEE_IS_OVER = [
+        'coffee is over'
     ]
 
     def __init__(self, slack_bot_token=None):
@@ -85,8 +103,12 @@ class Grandma:
         response = "I'm not listening well. What did you say?"
 
         if self.MAGIC_WORDS in message:
-            # TODO check the database
-            response = 'I did coffee for you'
+            if has_coffee():
+                response = 'I did coffee for you'
+            else:
+                response = ':face_with_monocle:'
+        elif self._someone_made_coffee(message):
+            response = 'The best coffee in town is served'
 
         self._post_answer(response)
 
@@ -100,7 +122,7 @@ class Grandma:
     def _post_answer(self, response):
         self.slack_client.api_call(
             'chat.postMessage',
-            channel='general',# TODO check the database
+            channel=DEFAULT_CHANNEL,
             text=response
         )
 
@@ -110,9 +132,11 @@ class Grandma:
     def _is_a_message(self, response):
         return response['type'] == 'message' and not 'subtype' in response
 
+    def _someone_made_coffee(self, message):
+        return message.lower() in self.COFFEE_IS_READY
+
 
 if __name__ == '__main__':
-    READ_DELAY = 1
     create_db()
 
     bot = Grandma()

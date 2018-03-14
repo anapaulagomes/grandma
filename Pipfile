@@ -8,9 +8,12 @@ name = "pypi"
 [packages]
 
 slackclient = "*"
-pytest = "*"
 
 
 [dev-packages]
 
 pytest-mock = "*"
+pytest = "*"
+freezegun = "*"
+yapf = "*"
+pytest-deadfixtures = "*"

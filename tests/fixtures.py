@@ -1,8 +1,15 @@
-from grandma.bot import Grandma
+from grandma.bot import Grandma, CoffeeDB
 import pytest
 
 
 USER_ID = 'U9D779NCR'
+TEST_DB_NAME = 'grandma-test.db'
+
+
+@pytest.fixture
+def bot():
+    db = CoffeeDB(db_name=TEST_DB_NAME)
+    return Grandma(db)
 
 
 @pytest.fixture
@@ -10,21 +17,22 @@ def connected_bot(mocker):
     rtm_connect_mock = mocker.patch('grandma.bot.SlackClient.rtm_connect')
     api_call_mock = mocker.patch('grandma.bot.SlackClient.api_call')
 
-    bot = Grandma()
+    db = CoffeeDB(db_name='grandma-test.db')
+    bot = Grandma(db)
     rtm_connect_mock.return_value = True
     api_call_mock.return_value = {'user_id': USER_ID}
     bot.connect()
     return bot
 
 
-@pytest.fixture
-def response_hello():
-    return [{'type': 'hello'}]
-
-
-@pytest.fixture
-def empty_response():
-    return []
+# @pytest.fixture
+# def response_hello():
+#     return [{'type': 'hello'}]
+#
+#
+# @pytest.fixture
+# def empty_response():
+#     return []
 
 
 @pytest.fixture

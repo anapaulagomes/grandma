@@ -1,12 +1,12 @@
 import os
-import time
-import re
-from slackclient import SlackClient
 import random
-from collections import namedtuple
+import re
 import sqlite3
+import time
+from collections import namedtuple
 from datetime import datetime, timedelta
 
+from slackclient import SlackClient
 
 READ_DELAY = 1
 
@@ -69,7 +69,7 @@ class Grandma:
     def __init__(self, db, slack_bot_token=None):
         self.db = db
         self._token = os.environ.get('SLACK_BOT_TOKEN', slack_bot_token)
-        # FIXME error when token is none
+        self.DEFAULT_CHANNEL = os.environ.get('DEFAULT_CHANNEL', 'general')
 
     def connect(self):
         self.db.create()
@@ -84,7 +84,7 @@ class Grandma:
 
         response = self.slack_client.rtm_read()
         if not response:
-            return
+            return None
         response = response[0]
 
         if self._is_a_message(response):
@@ -101,7 +101,7 @@ class Grandma:
         matches = re.search(self.MENTION_REGEX, text)
 
         if not matches:
-            return
+            return None
 
         mention = matches.group(2)
         content = matches.group(1) + matches.group(3)

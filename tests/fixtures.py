@@ -1,6 +1,6 @@
-from grandma.bot import Grandma, CoffeeDB
 import pytest
 
+from grandma.bot import CoffeeDB, Grandma
 
 USER_ID = 'U9D779NCR'
 TEST_DB_NAME = 'grandma-test.db'
@@ -25,14 +25,19 @@ def connected_bot(mocker):
     return bot
 
 
-# @pytest.fixture
-# def response_hello():
-#     return [{'type': 'hello'}]
-#
-#
-# @pytest.fixture
-# def empty_response():
-#     return []
+@pytest.fixture
+def response_hello():
+    return [{'type': 'hello'}]
+
+
+@pytest.fixture
+def empty_response():
+    return []
+
+
+@pytest.fixture
+def response_subtype():
+    return [{'subtype': 'bot_message', 'type': 'random'}]
 
 
 @pytest.fixture
@@ -75,16 +80,10 @@ def mention_in_the_middle():
 
 
 @pytest.fixture
-def response_with_different_type():
-    return [{
-        'type': 'user_typing',
-        'channel': 'D9DPELVBL',
-        'user': USER_ID
-    }]
-
-
-@pytest.fixture
-def ask_for_coffee(mocker, connected_bot, mention_at_the_end):
+def bot_ask_for_coffee(mocker, connected_bot):
     rtm_read_mock = mocker.patch('grandma.bot.SlackClient.rtm_read')
-    rtm_read_mock.return_value = mention_at_the_end
+    rtm_read_mock.return_value = [{
+        'type': 'message',
+        'text': '<@U9D779NCR> coffee?'
+    }]
     return connected_bot

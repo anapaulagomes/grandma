@@ -1,10 +1,13 @@
-from grandma.bot import BotNotConnected, CoffeeDB
-from .fixtures import TEST_DB_NAME
-from unittest.mock import patch, call
-import pytest
-import sqlite3
 import os
+import sqlite3
+from unittest.mock import call, patch
+
+import pytest
 from freezegun import freeze_time
+
+from grandma.bot import BotNotConnected, CoffeeDB
+
+from .fixtures import TEST_DB_NAME
 
 
 class TestBotConnection:
@@ -96,32 +99,24 @@ class TestBotParser:
         assert api_call_mock.called
         assert api_call_mock.call_args_list == expected_args
 
+    @pytest.mark.parametrize('response', [
+        'response_hello', 'empty_response', 'response_subtype',
+    ])
     @patch('grandma.bot.SlackClient.api_call')
-    def test_if_does_not_mention_directly_reply_with_emoji(
-            self, api_call_mock, connected_bot):
-        connected_bot._answer_random_interaction()
+    @patch('grandma.bot.SlackClient.rtm_read')
+    def test_do_nothing_if_is_not_a_message(
+            self, rtm_read_mock, api_call_mock, connected_bot, request, response):
+        rtm_read_mock.return_value = request.getfuncargvalue(response)
 
-        expected_args1 = [
-            call(
-                'chat.postMessage',
-                channel=connected_bot.DEFAULT_CHANNEL,
-                text=':thinking_face:')
-        ]
-        expected_args2 = [
-            call(
-                'chat.postMessage',
-                channel=connected_bot.DEFAULT_CHANNEL,
-                text=':two_hearts:')
-        ]
+        connected_bot.listen_and_answer()
 
-        assert api_call_mock.called
-        assert api_call_mock.call_args_list == expected_args1 or \
-            api_call_mock.call_args_list == expected_args2
+        assert rtm_read_mock.called
+        assert api_call_mock.called is False
 
     @patch('grandma.bot.SlackClient.api_call')
     @patch('grandma.bot.SlackClient.rtm_read')
-    def test_if_does_not_mention_directly_reply(self, rtm_read_mock,
-                                                api_call_mock, connected_bot):
+    def test_if_does_not_mention_directly_reply_with_emoji(
+            self, rtm_read_mock, api_call_mock, connected_bot):
         rtm_read_mock.return_value = [{
             'type': 'message',
             'text': 'my grandma is the best'
@@ -148,7 +143,9 @@ class TestBotParser:
 
 
 class TestCoffeeDB:
-    def _db(self):
+
+    @pytest.fixture
+    def cursor(self):
         conn = sqlite3.connect(TEST_DB_NAME)
         cursor = conn.cursor()
         yield cursor
@@ -156,12 +153,10 @@ class TestCoffeeDB:
 
         os.remove(TEST_DB_NAME)
 
-    def test_create_db_with_coffees_table(self):
+    def test_create_db_with_coffees_table(self, cursor):
         db = CoffeeDB(db_name=TEST_DB_NAME)
         db.create()
 
-        conn = sqlite3.connect(TEST_DB_NAME)
-        cursor = conn.cursor()
         query = """
             SELECT name FROM sqlite_master
             WHERE type='table' AND name='coffees';
@@ -170,16 +165,14 @@ class TestCoffeeDB:
 
         assert cursor.fetchone()
 
-        conn.close()
-
     @pytest.mark.parametrize('expected_has_coffee,result', [(True, 1),
                                                             (False, 0)])
-    def test_save_coffee_according_status(self, expected_has_coffee, result):
+    def test_save_coffee_according_status(
+            self, expected_has_coffee, result, cursor):
         db = CoffeeDB(db_name=TEST_DB_NAME)
         db.create()
         db.update(expected_has_coffee)
 
-        cursor = next(self._db())
         cursor.execute('SELECT * FROM coffees ORDER BY id DESC LIMIT 1')
         _, _, has_coffee = cursor.fetchone()
 
@@ -188,21 +181,14 @@ class TestCoffeeDB:
 
 class TestBotAnswers:
     @patch('grandma.bot.SlackClient.api_call')
-    @patch('grandma.bot.SlackClient.rtm_read')
-    def test_answer_if_has_coffee(self, rtm_read_mock, api_call_mock,
-                                  connected_bot):
-        rtm_read_mock.return_value = [{
-            'type': 'message',
-            'text': '<@U9D779NCR> coffee?'
-        }]
-
-        connected_bot.db.update(has_coffee=True)
-        connected_bot.listen_and_answer()
+    def test_answer_if_has_coffee(self, api_call_mock, bot_ask_for_coffee):
+        bot_ask_for_coffee.db.update(has_coffee=True)
+        bot_ask_for_coffee.listen_and_answer()
 
         expected_args = [
             call(
                 'chat.postMessage',
-                channel=connected_bot.DEFAULT_CHANNEL,
+                channel=bot_ask_for_coffee.DEFAULT_CHANNEL,
                 text='I did coffee for you')
         ]
 
@@ -210,21 +196,15 @@ class TestBotAnswers:
         assert api_call_mock.call_args_list == expected_args
 
     @patch('grandma.bot.SlackClient.api_call')
-    @patch('grandma.bot.SlackClient.rtm_read')
-    def test_answer_if_coffee_is_over(self, rtm_read_mock, api_call_mock,
-                                      connected_bot):
-        rtm_read_mock.return_value = [{
-            'type': 'message',
-            'text': '<@U9D779NCR> coffee?'
-        }]
-        connected_bot.db.update(has_coffee=False)
+    def test_answer_if_coffee_is_over(self, api_call_mock, bot_ask_for_coffee):
+        bot_ask_for_coffee.db.update(has_coffee=False)
 
-        connected_bot.listen_and_answer()
+        bot_ask_for_coffee.listen_and_answer()
 
         expected_args = [
             call(
                 'chat.postMessage',
-                channel=connected_bot.DEFAULT_CHANNEL,
+                channel=bot_ask_for_coffee.DEFAULT_CHANNEL,
                 text="I'm afraid we don't have it :face_with_monocle:")
         ]
 
@@ -232,24 +212,18 @@ class TestBotAnswers:
         assert api_call_mock.call_args_list == expected_args
 
     @patch('grandma.bot.SlackClient.api_call')
-    @patch('grandma.bot.SlackClient.rtm_read')
     def test_answer_coffee_is_cold_if_coffee_has_more_than_one_hour(
-            self, rtm_read_mock, api_call_mock, connected_bot):
-        rtm_read_mock.return_value = [{
-            'type': 'message',
-            'text': '<@U9D779NCR> coffee?'
-        }]
-
+            self, api_call_mock, bot_ask_for_coffee):
         with freeze_time('2017-12-01 12:10:01.262065'):
-            connected_bot.db.update(has_coffee=True)
+            bot_ask_for_coffee.db.update(has_coffee=True)
 
         with freeze_time('2017-12-01 13:15:00.262065'):
-            connected_bot.listen_and_answer()
+            bot_ask_for_coffee.listen_and_answer()
 
         expected_args = [
             call(
                 'chat.postMessage',
-                channel=connected_bot.DEFAULT_CHANNEL,
+                channel=bot_ask_for_coffee.DEFAULT_CHANNEL,
                 text='Maybe, if you like cold coffee... :grimacing:')
         ]
 
@@ -257,24 +231,18 @@ class TestBotAnswers:
         assert api_call_mock.call_args_list == expected_args
 
     @patch('grandma.bot.SlackClient.api_call')
-    @patch('grandma.bot.SlackClient.rtm_read')
     def test_answer_i_dont_think_so_if_after_two_hours(
-            self, rtm_read_mock, api_call_mock, connected_bot):
-        rtm_read_mock.return_value = [{
-            'type': 'message',
-            'text': '<@U9D779NCR> coffee?'
-        }]
-
+            self, api_call_mock, bot_ask_for_coffee):
         with freeze_time('2017-12-01 12:10:01.262065'):
-            connected_bot.db.update(has_coffee=True)
+            bot_ask_for_coffee.db.update(has_coffee=True)
 
         with freeze_time('2017-12-01 14:15:00.262065'):
-            connected_bot.listen_and_answer()
+            bot_ask_for_coffee.listen_and_answer()
 
         expected_args = [
             call(
                 'chat.postMessage',
-                channel=connected_bot.DEFAULT_CHANNEL,
+                channel=bot_ask_for_coffee.DEFAULT_CHANNEL,
                 text="I don't think so")
         ]
 

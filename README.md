@@ -20,11 +20,12 @@ The param `--host=0.0.0.0` is important to keep visible externally.
 
 **TODO**
 
-**API**
-[ ] add api support (post message if has coffee)
-[ ] add tests to api
-
 **ESP8266**
 [ ] press the button and send the request
 [ ] turn the light according with status code
 [ ] add tests
+
+
+**Security**
+[ ] remove from history ssid + password
+[ ] use environment variables

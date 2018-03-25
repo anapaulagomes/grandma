@@ -20,7 +20,7 @@ def test_save_and_notify_on_slack_when_has_coffee(client, mocker, connected_bot)
             text='The best coffee in town is served')
     ]
 
-    with freeze_time('2017-12-01 12:10:01.262065'):
+    with freeze_time('2030-12-01 12:10:01.262065'):
         response = client.get(url_for('has_coffee'))
 
     assert response.status_code == 200
@@ -40,8 +40,10 @@ def test_does_not_notify_on_slack_when_notified_in_less_than_20_minutes(client, 
         call('auth.test'),
     ]
 
-    client.get(url_for('has_coffee'))
-    response = client.get(url_for('has_coffee'))
+    with freeze_time('2017-12-01 12:10:01.262065'):
+        client.get(url_for('has_coffee'))
+    with freeze_time('2017-12-01 12:20:01.262065'):
+        response = client.get(url_for('has_coffee'))
 
     assert response.status_code == 200
     assert api_call_mock.called

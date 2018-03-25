@@ -127,16 +127,16 @@ class Grandma:
         elif self._coffee_is_over(message):
             response = 'Oh no'
 
-        self._post_answer(response)
+        self.post_answer(response)
 
     def _answer_random_interaction(self):
         answers = [':thinking_face:', ':two_hearts:']
         option = random.randint(0, 1)
         response = answers[option]
 
-        self._post_answer(response)
+        self.post_answer(response)
 
-    def _post_answer(self, response):
+    def post_answer(self, response):
         self.slack_client.api_call(
             'chat.postMessage',
             channel=self.DEFAULT_CHANNEL,

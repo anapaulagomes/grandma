@@ -1,6 +1,7 @@
 import pytest
 
 from grandma.bot import CoffeeDB, Grandma
+from grandma.server import app as api
 
 USER_ID = 'U9D779NCR'
 TEST_DB_NAME = 'grandma-test.db'
@@ -87,3 +88,8 @@ def bot_ask_for_coffee(mocker, connected_bot):
         'text': '<@U9D779NCR> coffee?'
     }]
     return connected_bot
+
+
+@pytest.fixture
+def app():
+    return api

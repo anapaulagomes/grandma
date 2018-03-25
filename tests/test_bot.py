@@ -11,6 +11,10 @@ from .fixtures import TEST_DB_NAME
 
 
 class TestBotConnection:
+    @classmethod
+    def teardown_class(cls):
+        os.remove(TEST_DB_NAME)
+
     @patch('grandma.bot.SlackClient.api_call')
     @patch('grandma.bot.SlackClient.rtm_connect')
     def test_connect_on_slack_api(self, rtm_connect_mock, api_call_mock, bot):
@@ -180,6 +184,10 @@ class TestCoffeeDB:
 
 
 class TestBotAnswers:
+    @classmethod
+    def teardown_class(cls):
+        os.remove(TEST_DB_NAME)
+
     @patch('grandma.bot.SlackClient.api_call')
     def test_answer_if_has_coffee(self, api_call_mock, bot_ask_for_coffee):
         bot_ask_for_coffee.db.update(has_coffee=True)

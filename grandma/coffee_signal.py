@@ -1,6 +1,7 @@
 import network
 import socket
 import machine
+import time
 
 
 # MicroPython module
@@ -19,11 +20,12 @@ def connect():
 
 
 def http_get():
-    host = '192.168.0.23'
-    addr = socket.getaddrinfo('192.168.0.23', 5000)[0][-1]
+    localhost = '192.168.0.25'
+    api_host = '192.168.0.24'
+    addr = socket.getaddrinfo(api_host, 5000)[0][-1]
     s = socket.socket()
     s.connect(addr)
-    s.send(bytes('GET / HTTP/1.0\r\nHost: %s\r\n\r\n' % host, 'utf8'))
+    s.send(bytes('GET / HTTP/1.0\r\nHost: %s\r\n\r\n' % localhost, 'utf8'))
     data = s.recv(100)
     s.close()
     return data
@@ -48,3 +50,22 @@ if connect():
             blink_led(number_of_blinks=3)
     except:
         blink_led(number_of_blinks=5)
+
+###
+import machine
+import time
+button = machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_UP)
+pin = machine.Pin(15, machine.Pin.OUT)
+
+while True:
+    first = button.value()
+    time.sleep(0.01)
+    second = button.value()
+
+    if first and not second:
+        pin.on()
+        http_get()
+        print('Button pressed!')
+    elif not first and second:
+        pin.off()
+        print('Button released!')

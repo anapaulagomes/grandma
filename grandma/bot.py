@@ -46,6 +46,9 @@ class CoffeeDB:
         conn.close()
         return bool(status), timestamp
 
+    def coffee_is_over(self):
+        pass
+
 
 class BotNotConnected(BaseException):
     pass
@@ -53,9 +56,8 @@ class BotNotConnected(BaseException):
 
 class Grandma:
     NAME = 'grandma'
-    DEFAULT_CHANNEL = 'general'
     MENTION_REGEX = r'(.*)<@(|[WU].+?)>(.*)'
-    MAGIC_WORDS = 'coffee?'
+    ASKED_ABOUT_COFFEE = 'coffee?'
     COFFEE_IS_READY = [
         'coffee is done',
         'coffee is ready',
@@ -97,6 +99,28 @@ class Grandma:
 
         return response
 
+    def post_answer(self, response):
+        self.slack_client.api_call(
+            'chat.postMessage',
+            channel=self.DEFAULT_CHANNEL,
+            text=response
+        )
+
+    def notify(self):
+        coffee_is_served_message = 'Would you like a cup of coffee?'
+
+        _, last_time_was_made = self.db.has_coffee()
+        self.db.update(has_coffee=True)
+
+        if last_time_was_made:
+            when = datetime.strptime(last_time_was_made, '%Y-%m-%d %H:%M:%S.%f')
+            more_than_twenty_minutes = datetime.now() > (when + timedelta(minutes=20))
+
+            if more_than_twenty_minutes:
+                self.post_answer(coffee_is_served_message)
+        else:
+            self.post_answer(coffee_is_served_message)
+
     def _parse_message(self, text):
         matches = re.search(self.MENTION_REGEX, text)
 
@@ -111,7 +135,7 @@ class Grandma:
     def _answer_about_coffee(self, message):
         response = "I'm not listening well. What did you say?"
 
-        if self.MAGIC_WORDS in message:
+        if self.ASKED_ABOUT_COFFEE in message:
             has_coffee, when_was_made = self.db.has_coffee()
             if has_coffee:
                 if self._probably_over(when_was_made):
@@ -135,13 +159,6 @@ class Grandma:
         response = answers[option]
 
         self.post_answer(response)
-
-    def post_answer(self, response):
-        self.slack_client.api_call(
-            'chat.postMessage',
-            channel=self.DEFAULT_CHANNEL,
-            text=response
-        )
 
     def _is_not_connected(self):
         return not hasattr(self, 'slack_client') and not hasattr(self, '_id')
@@ -169,6 +186,8 @@ class Grandma:
             self.db.update(has_coffee=False)
         return result
 
+
+# TODO talvez uma classe chamada Brain? com as respostas etc
 
 if __name__ == '__main__':
     db = CoffeeDB(db_name='grandma.db')

@@ -17,11 +17,11 @@ def test_save_and_notify_on_slack_when_has_coffee(client, mocker, connected_bot)
         call(
             'chat.postMessage',
             channel=connected_bot.DEFAULT_CHANNEL,
-            text='The best coffee in town is served')
+            text='Would you like a cup of coffee?')
     ]
 
     with freeze_time('2030-12-01 12:10:01.262065'):
-        response = client.get(url_for('has_coffee'))
+        response = client.get(url_for('coffee_is_done'))
 
     assert response.status_code == 200
     assert api_call_mock.called
@@ -41,9 +41,9 @@ def test_does_not_notify_on_slack_when_notified_in_less_than_20_minutes(client, 
     ]
 
     with freeze_time('2017-12-01 12:10:01.262065'):
-        client.get(url_for('has_coffee'))
+        client.get(url_for('coffee_is_done'))
     with freeze_time('2017-12-01 12:20:01.262065'):
-        response = client.get(url_for('has_coffee'))
+        response = client.get(url_for('coffee_is_done'))
 
     assert response.status_code == 200
     assert api_call_mock.called

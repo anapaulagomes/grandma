@@ -20,12 +20,25 @@ The param `--host=0.0.0.0` is important to keep visible externally.
 
 **TODO**
 
-**ESP8266**
-[ ] press the button and send the request
-[ ] turn the light according with status code
-[ ] add tests
+**Server**
+[ ] endpoint coffee is over
 
+**ESP8266**
+[ ] tests loading the script into the pyboard
+[ ] add tests
+[ ] new button (coffee is over)
+[ ] turn the light according with status code
 
 **Security**
 [ ] remove from history ssid + password
 [ ] use environment variables
+
+**Refactoring**
+
+[ ] check db persistancy
+[ ] maybe using an orm? http://docs.peewee-orm.com/en/latest/peewee/quickstart.html#quickstart
+[ ] brain
+
+Nice to have:
+
+[ ] IA lib instead of hard coded messages

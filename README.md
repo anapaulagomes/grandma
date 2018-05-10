@@ -4,12 +4,6 @@ She will let you know when there is coffee. 👵🏼 ☕️
 
 ***
 
----> imagem com entidades do projeto
-
-## Available commands
-
-``
-
 ## Running
 
 Make sure your file `.env` is updated with all the environment variable needed:
@@ -39,14 +33,15 @@ ampy run -n grandma/board.py
 **TODO**
 
 **ESP8266**
-[ ] add tests
-[ ] new button (coffee is over)
 
-**Refactoring**
+- [ ] add tests
+- [ ] new button (coffee is over)
 
-[ ] check db persistancy
-[ ] maybe using an orm? http://docs.peewee-orm.com/en/latest/peewee/quickstart.html#quickstart
-[ ] brain
+**Bot**
+
+- [ ] Refactor (grandma, brain, coffee)
+- [ ] check db persistancy
+- [ ] maybe using an orm? http://docs.peewee-orm.com/en/latest/peewee/quickstart.html#quickstart
 
 Nice to have:
 

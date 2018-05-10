@@ -1,7 +1,7 @@
 from grandma import server
 from flask import url_for
 from .fixtures import TEST_DB_NAME, USER_ID
-from unittest.mock import call, patch
+from unittest.mock import call, patch, MagicMock
 from freezegun import freeze_time
 
 
@@ -17,7 +17,8 @@ def test_save_and_notify_on_slack_when_has_coffee(client, mocker, connected_bot)
         call(
             'chat.postMessage',
             channel=connected_bot.DEFAULT_CHANNEL,
-            text='Would you like a cup of coffee?')
+            text='Would you like a cup of coffee?',
+        ),
     ]
 
     with freeze_time('2030-12-01 12:10:01.262065'):
@@ -28,17 +29,15 @@ def test_save_and_notify_on_slack_when_has_coffee(client, mocker, connected_bot)
     assert api_call_mock.call_args_list == expected_args
 
 
-def test_does_not_notify_on_slack_when_notified_in_less_than_20_minutes(client, mocker, connected_bot):
+# TODO move this test to bot
+def test_does_not_notify_on_slack_when_notified_in_less_than_20_minutes(client, mocker):
     rtm_connect_mock = mocker.patch('grandma.bot.SlackClient.rtm_connect')
     api_call_mock = mocker.patch('grandma.bot.SlackClient.api_call')
 
     rtm_connect_mock.return_value = True
     api_call_mock.return_value = {'user_id': USER_ID}
 
-    expected_args = [
-        call('auth.test'),
-        call('auth.test'),
-    ]
+    expected_args = [call('auth.test'), call('auth.test')]
 
     with freeze_time('2017-12-01 12:10:01.262065'):
         client.get(url_for('coffee_is_done'))
@@ -48,3 +47,15 @@ def test_does_not_notify_on_slack_when_notified_in_less_than_20_minutes(client, 
     assert response.status_code == 200
     assert api_call_mock.called
     assert api_call_mock.call_args_list == expected_args
+
+
+def test_update_coffee_when_coffee_is_over(client, mocker):
+    rtm_connect_mock = mocker.patch('grandma.bot.SlackClient.rtm_connect')
+    api_call_mock = mocker.patch('grandma.bot.SlackClient.api_call')
+    update = mocker.patch('grandma.bot.CoffeeDB.update')
+
+    client.get(url_for('coffee_is_done'))
+    response = client.get(url_for('coffee_is_over'))
+
+    assert response.status_code == 200
+    assert update.called

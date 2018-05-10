@@ -8,6 +8,7 @@ name = "pypi"
 [packages]
 
 slackclient = "*"
+adafruit-ampy = "*"
 
 
 [dev-packages]

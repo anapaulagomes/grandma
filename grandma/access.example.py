@@ -1,0 +1,4 @@
+API_URL = '192.168.1.10'
+API_PORT = 5000
+NETWORK_NAME = 'my_ssid'
+NETWORK_PASSWORD = 'secretpass'

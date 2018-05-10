@@ -21,5 +21,7 @@ def coffee_is_done():
 
 @app.route('/coffee/over')
 def coffee_is_over():
-    # TODO update the last record
-    pass
+    db = CoffeeDB(db_name='grandma.db')
+    bot = Grandma(db)
+    bot.db.update(has_coffee=False)
+    return ''

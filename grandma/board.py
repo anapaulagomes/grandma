@@ -11,16 +11,22 @@ class CoffeeBoard(object):
         self.api_port = access.API_PORT
 
     def run(self):
-        button = machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_UP)
+        done_button = machine.Pin(12, machine.Pin.IN, machine.Pin.PULL_UP)
+        over_button = machine.Pin(14, machine.Pin.IN, machine.Pin.PULL_UP)
         led = machine.Pin(15, machine.Pin.OUT)
 
         self._connect()
 
         while True:
-            pressed = not button.value()
-            if pressed:
+            done_pressed = not done_button.value()
+            if done_pressed:
                 led.on()
                 self._has_coffee()
+                led.off()
+            over_pressed = not over_button.value()
+            if over_pressed:
+                led.on()
+                self._coffee_is_over()
                 led.off()
 
     def _connect(self):

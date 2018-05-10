@@ -32,11 +32,6 @@ ampy run -n grandma/board.py
 
 **TODO**
 
-**ESP8266**
-
-- [ ] add tests
-- [ ] new button (coffee is over)
-
 **Bot**
 
 - [ ] Refactor (grandma, brain, coffee)

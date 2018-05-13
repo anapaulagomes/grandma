@@ -28,6 +28,7 @@ class CoffeeDB:
         timestamp = datetime.now()
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
+        # FIXME change to update the last one
         cursor.execute('''INSERT INTO coffees(timestamp, has_coffee)
                     VALUES (?, ?)''', (timestamp, has_coffee))
         conn.commit()

@@ -26,6 +26,15 @@ The param `--host=0.0.0.0` is important to keep visible externally.
 
 Check the name of your board on `/dev/` directory (for MacOS users) e.g. `/dev/tty.SLAB_USBtoUART`.
 
+Secrets: `access.py`
+
+```
+API_URL = '192.168.0.24'  # be careful, it may change
+API_PORT = 5000
+NETWORK_NAME = 'yyyy'
+NETWORK_PASSWORD = 'xxxxxx'
+```
+
 ```
 ampy run -n grandma/board.py
 ```
@@ -34,6 +43,7 @@ ampy run -n grandma/board.py
 
 **Bot**
 
+- [ ] check private messages
 - [ ] Refactor (grandma, brain, coffee)
 - [ ] check db persistancy
 - [ ] maybe using an orm? http://docs.peewee-orm.com/en/latest/peewee/quickstart.html#quickstart

@@ -52,6 +52,3 @@ class CoffeeBoard(object):
         s.close()
         print(data)
         return data
-
-
-CoffeeBoard().run()

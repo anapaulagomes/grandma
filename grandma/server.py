@@ -1,27 +1,34 @@
-from flask import Flask, jsonify, abort
-from grandma.bot import CoffeeDB, Grandma
-from datetime import datetime, timedelta
-from slackclient.server import SlackLoginError
+from flask import Flask, abort, jsonify
+from grandma.bot import Grandma, BotNotConnected, start_db, Coffee
+from playhouse.shortcuts import model_to_dict
 
 app = Flask(__name__)
+bot = Grandma()
+
+
+@app.route('/')
+def coffees():
+    obj = [model_to_dict(c, backrefs=True) for c in Coffee.select()]
+    return jsonify(obj)
 
 
 @app.route('/coffee/done')
 def coffee_is_done():
-    db = CoffeeDB(db_name='grandma.db')  # FIXME how to test it - Makefile?
-    bot = Grandma(db)
     try:
         bot.connect()
-    except SlackLoginError:
+    except BotNotConnected:
         abort(500)
-
-    bot.notify()
+    else:
+        bot.coffee_is_done()
     return ''
 
 
 @app.route('/coffee/over')
 def coffee_is_over():
-    db = CoffeeDB(db_name='grandma.db')
-    bot = Grandma(db)
-    bot.db.update(has_coffee=False)
+    bot.coffee_is_over()
     return ''
+
+
+if __name__ == '__main__':
+    start_db()
+    app.run()

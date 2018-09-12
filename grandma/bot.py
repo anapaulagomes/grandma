@@ -8,47 +8,29 @@ from datetime import datetime, timedelta
 
 from slackclient import SlackClient
 
-READ_DELAY = 1
+from peewee import SqliteDatabase, Model, BooleanField, DateTimeField
 
 
-class CoffeeDB:
-    def __init__(self, db_name):
-        self.db_name = db_name
+db = SqliteDatabase(os.getenv('DB_NAME', 'grandma.db'))
 
-    def create(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS coffees
-                 (id integer primary key autoincrement,
-                 timestamp timestamp, has_coffee integer)''')
-        conn.commit()
-        conn.close()
 
-    def update(self, has_coffee):
-        timestamp = datetime.now()
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        # FIXME change to update the last one
-        cursor.execute('''INSERT INTO coffees(timestamp, has_coffee)
-                    VALUES (?, ?)''', (timestamp, has_coffee))
-        conn.commit()
-        conn.close()
+def start_db():
+    db.connect()
+    db.create_tables([Coffee], safe=True)
+    db.close()
 
-    def has_coffee(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('''SELECT * FROM coffees ORDER BY id DESC LIMIT 1''')
-        result = cursor.fetchone()
-        if result:
-            _, timestamp, status = result
-        else:
-            return False, None
-        conn.commit()
-        conn.close()
-        return bool(status), timestamp
 
-    def coffee_is_over(self):
-        pass
+class Coffee(Model):
+    is_over = BooleanField(default=False)
+    created = DateTimeField(default=datetime.now)
+    updated = DateTimeField(null=True)
+
+    class Meta:
+        database = db
+
+    def update(self, *args, **kwargs):
+        self.updated = datetime.now()
+        return super(Coffee, self).update(*args, **kwargs)
 
 
 class BotNotConnected(BaseException):
@@ -56,145 +38,44 @@ class BotNotConnected(BaseException):
 
 
 class Grandma:
-    NAME = 'grandma'
-    MENTION_REGEX = r'(.*)<@(|[WU].+?)>(.*)'
-    ASKED_ABOUT_COFFEE = 'coffee?'
-    COFFEE_IS_READY = [
-        'coffee is done',
-        'coffee is ready',
-        'coffee is served',
-    ]
-    COFFEE_IS_OVER = [
-        'coffee is over',
-        "it's over",
-    ]
-
-    def __init__(self, db, slack_bot_token=None):
-        self.db = db
+    def __init__(self, slack_bot_token=None):
         self._token = os.environ.get('SLACK_BOT_TOKEN', slack_bot_token)
-        self.DEFAULT_CHANNEL = os.environ.get('DEFAULT_CHANNEL', 'general')
+        self._channel = os.environ.get('DEFAULT_CHANNEL', 'general')
 
     def connect(self):
-        self.db.create()
         self.slack_client = SlackClient(self._token)
         if self.slack_client.rtm_connect(with_team_state=False):
             self._id = self.slack_client.api_call('auth.test')['user_id']
-            print('Grandma is online')
-
-    def listen_and_answer(self):
-        if self._is_not_connected():
+        else:
             raise BotNotConnected
-
-        response = self.slack_client.rtm_read()
-        if not response:
-            return None
-        response = response[0]
-
-        if self._is_a_message(response):
-            message = self._parse_message(response['text'])
-
-            if message and message.mention == self._id:
-                self._answer_about_coffee(message.content)
-            elif self.NAME in response['text']:
-                self._answer_random_interaction()
-
-        return response
 
     def post_answer(self, response):
         self.slack_client.api_call(
             'chat.postMessage',
-            channel=self.DEFAULT_CHANNEL,
+            channel=self._channel,
             text=response
         )
 
     def notify(self):
         coffee_is_served_message = 'Would you like a cup of coffee?'
+        coffee = self._last_coffee_made()
 
-        _, last_time_was_made = self.db.has_coffee()
-        self.db.update(has_coffee=True)
-
-        if last_time_was_made:
-            when = datetime.strptime(last_time_was_made, '%Y-%m-%d %H:%M:%S.%f')
-            more_than_twenty_minutes = datetime.now() > (when + timedelta(minutes=20))
-
-            if more_than_twenty_minutes:
+        if coffee:
+            more_than_twenty_minutes = datetime.now() > (coffee.created + timedelta(minutes=20))
+            if not coffee.is_over and more_than_twenty_minutes:
                 self.post_answer(coffee_is_served_message)
+
+    def coffee_is_over(self):
+        last_coffee = self._last_coffee_made()
+
+        if last_coffee:
+            last_coffee.update(is_over=True).execute()
         else:
-            self.post_answer(coffee_is_served_message)
+            Coffee.create(is_over=True)
+    
+    def coffee_is_done(self):
+        Coffee.create(is_over=False)
+        self.notify()
 
-    def _parse_message(self, text):
-        matches = re.search(self.MENTION_REGEX, text)
-
-        if not matches:
-            return None
-
-        mention = matches.group(2)
-        content = matches.group(1) + matches.group(3)
-        Message = namedtuple('message', ['content', 'mention'])
-        return Message(content, mention)
-
-    def _answer_about_coffee(self, message):
-        response = "I'm not listening well. What did you say?"
-
-        if self.ASKED_ABOUT_COFFEE in message:
-            has_coffee, when_was_made = self.db.has_coffee()
-            if has_coffee:
-                if self._probably_over(when_was_made):
-                    response = "I don't think so"
-                elif self._probably_cold(when_was_made):
-                    response = 'Maybe, if you like cold coffee... :grimacing:'
-                else:
-                    response = 'I did coffee for you'
-            else:
-                response = "I'm afraid we don't have it :face_with_monocle:"
-        elif self._someone_made_coffee(message):
-            response = 'The best coffee in town is served'
-        elif self._coffee_is_over(message):
-            response = 'Oh no'
-
-        self.post_answer(response)
-
-    def _answer_random_interaction(self):
-        answers = [':thinking_face:', ':two_hearts:']
-        option = random.randint(0, 1)
-        response = answers[option]
-
-        self.post_answer(response)
-
-    def _is_not_connected(self):
-        return not hasattr(self, 'slack_client') and not hasattr(self, '_id')
-
-    def _is_a_message(self, response):
-        return response['type'] == 'message' and not ('subtype' in response)
-
-    def _someone_made_coffee(self, message):
-        result = message.lower().lstrip() in self.COFFEE_IS_READY
-        if result:
-            self.db.update(has_coffee=True)
-        return result
-
-    def _probably_cold(self, when_was_made):
-        when = datetime.strptime(when_was_made, '%Y-%m-%d %H:%M:%S.%f')
-        return (when + timedelta(hours=1)) < datetime.now()
-
-    def _probably_over(self, when_was_made):
-        when = datetime.strptime(when_was_made, '%Y-%m-%d %H:%M:%S.%f')
-        return (when + timedelta(hours=2)) < datetime.now()
-
-    def _coffee_is_over(self, message):
-        result = message.lower().lstrip() in self.COFFEE_IS_OVER
-        if result:
-            self.db.update(has_coffee=False)
-        return result
-
-
-# TODO talvez uma classe chamada Brain? com as respostas etc
-
-if __name__ == '__main__':
-    db = CoffeeDB(db_name='grandma.db')
-    bot = Grandma(db)
-    bot.connect()
-
-    while True:
-        print(bot.listen_and_answer())
-        time.sleep(READ_DELAY)
+    def _last_coffee_made(self):
+        return Coffee.select().order_by(Coffee.id.desc()).first()

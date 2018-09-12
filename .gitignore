@@ -54,5 +54,5 @@ env.bak/
 venv.bak/
 
 # application
-grandma.db
+*.db
 grandma/access.py

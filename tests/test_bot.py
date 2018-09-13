@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from grandma.bot import Grandma, BotNotConnected
 
 
-class TestBotConnection:
+class TestGrandma:
     @pytest.fixture
     def bot(self):
         return Grandma()
@@ -45,18 +45,16 @@ class TestBotConnection:
         rtm_connect_mock.return_value = True
         api_call_mock.return_value = {'user_id': 'USER_ID'}
 
+        # FIXME the database must be clean in this point
+
         expected_args = [
             call('auth.test'),
             call('chat.postMessage', channel=bot._channel, text='Would you like a cup of coffee?')
         ]
         bot.connect()
 
-        # TODO create instances of coffee to test it
-
-        with freeze_time('2017-12-01 12:10:01.262065'):
-            bot.coffee_is_done()
-        with freeze_time('2017-12-01 12:20:01.262065'):
-            bot.coffee_is_done()
+        bot.coffee_is_done()  # should notify
+        bot.coffee_is_done()  # should not notify
 
         assert api_call_mock.called
         assert api_call_mock.call_args_list == expected_args

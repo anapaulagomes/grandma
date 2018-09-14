@@ -1,9 +1,8 @@
-from flask import Flask, abort, jsonify
-from grandma.bot import Grandma, BotNotConnected, start_db, Coffee
+from flask import abort, jsonify
 from playhouse.shortcuts import model_to_dict
 
-app = Flask(__name__)
-bot = Grandma()
+from grandma.server.app import app
+from grandma.server.bot import Grandma, BotNotConnected, Coffee
 
 
 @app.route('/')
@@ -14,6 +13,7 @@ def coffees():
 
 @app.route('/coffee/done')
 def coffee_is_done():
+    bot = Grandma()
     try:
         bot.connect()
     except BotNotConnected:
@@ -25,10 +25,6 @@ def coffee_is_done():
 
 @app.route('/coffee/over')
 def coffee_is_over():
+    bot = Grandma()
     bot.coffee_is_over()
     return ''
-
-
-if __name__ == '__main__':
-    start_db()
-    app.run()

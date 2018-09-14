@@ -5,9 +5,9 @@ from freezegun import freeze_time
 
 
 def test_save_and_notify_on_slack_when_has_coffee(client, mocker):
-    rtm_connect_mock = mocker.patch('grandma.bot.SlackClient.rtm_connect')
-    api_call_mock = mocker.patch('grandma.bot.SlackClient.api_call')
-    update = mocker.patch('grandma.bot.Grandma.coffee_is_done')
+    rtm_connect_mock = mocker.patch('grandma.server.bot.SlackClient.rtm_connect')
+    api_call_mock = mocker.patch('grandma.server.bot.SlackClient.api_call')
+    update = mocker.patch('grandma.server.bot.Grandma.coffee_is_done')
 
     response = client.get(url_for('coffee_is_done'))
 
@@ -16,9 +16,9 @@ def test_save_and_notify_on_slack_when_has_coffee(client, mocker):
 
 
 def test_update_coffee_when_coffee_is_over(client, mocker):
-    rtm_connect_mock = mocker.patch('grandma.bot.SlackClient.rtm_connect')
-    api_call_mock = mocker.patch('grandma.bot.SlackClient.api_call')
-    update = mocker.patch('grandma.bot.Grandma.coffee_is_over')
+    rtm_connect_mock = mocker.patch('grandma.server.bot.SlackClient.rtm_connect')
+    api_call_mock = mocker.patch('grandma.server.bot.SlackClient.api_call')
+    update = mocker.patch('grandma.server.bot.Grandma.coffee_is_over')
 
     client.get(url_for('coffee_is_done'))
     response = client.get(url_for('coffee_is_over'))

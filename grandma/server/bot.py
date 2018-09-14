@@ -1,23 +1,11 @@
 import os
-import random
-import re
-import sqlite3
 import time
-from collections import namedtuple
 from datetime import datetime, timedelta
 
 from slackclient import SlackClient
+from peewee import Model, BooleanField, DateTimeField
 
-from peewee import SqliteDatabase, Model, BooleanField, DateTimeField
-
-
-db = SqliteDatabase(os.getenv('DB_NAME', 'grandma.db'))
-
-
-def start_db():
-    db.connect()
-    db.create_tables([Coffee], safe=True)
-    db.close()
+from grandma.server.app import db
 
 
 class Coffee(Model):
@@ -28,9 +16,10 @@ class Coffee(Model):
     class Meta:
         database = db
 
-    def update(self, *args, **kwargs):
-        self.updated = datetime.now()
-        return super(Coffee, self).update(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        if self.id:
+            self.updated = datetime.now()
+        return super(Coffee, self).save(*args, **kwargs)
 
 
 class BotNotConnected(BaseException):
@@ -69,7 +58,8 @@ class Grandma:
         last_coffee = self._last_coffee_made()
 
         if last_coffee:
-            last_coffee.update(is_over=True).execute()
+            last_coffee.is_over = True
+            last_coffee.save()
         else:
             Coffee.create(is_over=True)
     

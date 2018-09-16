@@ -1,20 +1,16 @@
 from flask import abort, jsonify
 from playhouse.shortcuts import model_to_dict
 
-from grandma.server.app import app, db_wrapper
+from grandma.server.app import app
 from grandma.server.bot import Grandma, BotNotConnected, Coffee
-
-
-peewee_db = db_wrapper.database
 
 
 @app.route('/')
 def coffees():
-    with peewee_db.atomic():
-        obj = [
-            model_to_dict(c, backrefs=True)
-            for c in Coffee.select()
-        ]
+    obj = [
+        model_to_dict(c, backrefs=True)
+        for c in Coffee.select()
+    ]
     return jsonify(obj)
 
 

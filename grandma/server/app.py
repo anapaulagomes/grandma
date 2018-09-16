@@ -10,3 +10,13 @@ app.config['DATABASE'] = f'sqlite:///{os.getcwd()}/grandma.db'
 
 db_wrapper = FlaskDB(app)
 print(app.config['DATABASE'])
+
+
+def initialize_db(db_wrapper):
+    from grandma.server.bot import Coffee
+    db_wrapper.database.create_tables([Coffee], safe=True)
+
+
+@app.cli.command()
+def initdb():
+    initialize_db(db_wrapper)

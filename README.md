@@ -1,12 +1,8 @@
 # Grandma
 
-She will let you know when the coffee is done. 👵🏼 ☕️
+How does she do that?
 
-***
-
-How does she do it?
-
-Using a MicroPython board the humans can press the green button when the coffee is done or the red button when the coffee is over.
+Using a [MicroPython](https://micropython.org/) board, humans can press the green button when the coffee is done or the red button when the coffee is over.
 
 ![](board.jpg)
 

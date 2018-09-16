@@ -51,11 +51,9 @@ make run
 
 It will be available on [http://localhost:5000/](http://localhost:5000/). We just ran a simple API with three endpoints:
 
-```bash
 [/](http://localhost:5000/)
 [/coffee/done](http://localhost:5000/coffee/done)
 [/coffee/over](http://localhost:5000/coffee/over)
-```
 
 The home (`/`) will list all the coffees that Grandma did. The other endpoints will be available to the board updates when the coffee is done or over.
 

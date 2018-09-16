@@ -1,0 +1,4 @@
+adafruit-ampy==1.0.5
+Flask==1.0.2
+peewee==3.7.0
+slackclient==1.2.1

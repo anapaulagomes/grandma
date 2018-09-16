@@ -4,11 +4,7 @@ deploy-to-board:
 	ampy put grandma/access.py
 
 run:
-	FLASK_APP=grandma/server.py flask run  --host=0.0.0.0
+	FLASK_APP=grandma/server/main.py flask run  --host=0.0.0.0
 
 tests:
 	pytest tests
-
-wake:
-	pipenv shell
-	source .env

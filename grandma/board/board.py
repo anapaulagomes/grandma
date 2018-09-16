@@ -1,7 +1,6 @@
 import network
 import socket
 import machine
-import time
 import access
 
 

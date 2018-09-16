@@ -1,27 +1,23 @@
-from grandma import server
-from flask import url_for
-from unittest.mock import call
-from freezegun import freeze_time
+from tests.conftest import use_test_database
 
 
-def test_save_and_notify_on_slack_when_has_coffee(client, mocker):
-    rtm_connect_mock = mocker.patch('grandma.server.bot.SlackClient.rtm_connect')
-    api_call_mock = mocker.patch('grandma.server.bot.SlackClient.api_call')
+@use_test_database
+def test_save_and_notify_on_slack_when_has_coffee(client, mocker, slack_calls_mock):
     update = mocker.patch('grandma.server.bot.Grandma.coffee_is_done')
-
-    response = client.get(url_for('coffee_is_done'))
+    response = client.get('/coffee/done')
 
     assert response.status_code == 200
-    assert api_call_mock.called
+    assert slack_calls_mock.called
+    assert update.called
 
 
-def test_update_coffee_when_coffee_is_over(client, mocker):
-    rtm_connect_mock = mocker.patch('grandma.server.bot.SlackClient.rtm_connect')
-    api_call_mock = mocker.patch('grandma.server.bot.SlackClient.api_call')
+@use_test_database
+def test_update_coffee_when_coffee_is_over(client, mocker, slack_calls_mock):
     update = mocker.patch('grandma.server.bot.Grandma.coffee_is_over')
 
-    client.get(url_for('coffee_is_done'))
-    response = client.get(url_for('coffee_is_over'))
+    client.get('/coffee/done')
+    response = client.get('/coffee/over')
 
     assert response.status_code == 200
+    assert slack_calls_mock.called
     assert update.called

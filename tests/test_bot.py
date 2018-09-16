@@ -3,7 +3,6 @@ import sqlite3
 from unittest.mock import call, patch
 
 import pytest
-from freezegun import freeze_time
 
 from grandma.server.bot import BotNotConnected, Grandma
 from tests.conftest import use_test_database

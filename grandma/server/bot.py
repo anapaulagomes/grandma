@@ -47,8 +47,8 @@ class Grandma:
 
             if when:
                 twenty_minutes_ahead = when + timedelta(minutes=20)
-                more_than_twenty_minutes = datetime.now(
-                ) > twenty_minutes_ahead
+                now = datetime.now()
+                more_than_twenty_minutes = now > twenty_minutes_ahead
                 if more_than_twenty_minutes:
                     self.post_answer(coffee_is_served_message)
             else:

@@ -55,4 +55,4 @@ venv.bak/
 
 # application
 *.db
-grandma/access.py
+grandma/board/access.py

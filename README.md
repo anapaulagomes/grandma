@@ -69,7 +69,7 @@ To keep it running as soon as it is connected to an energy source, run `make dep
 If you'd like running it from your machine:
 
 ```
-ampy run -n grandma/board.py
+ampy run -n grandma/board/board.py
 ```
 
 ### All together!
